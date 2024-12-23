@@ -1,0 +1,35 @@
+# config/app.yaml
+app:
+  name: commission-calculator
+  env: '%env(APP_ENV)%'
+  debug: '%env(bool:APP_DEBUG)%'
+  version: 1.0.0
+
+services:
+  bin_lookup:
+    base_url: '%env(BIN_LOOKUP_URL)%'
+    timeout: 5
+    cache_ttl: 3600
+    retry_attempts: 3
+    retry_delay: 1000
+
+  exchange_rates:
+    base_url: '%env(EXCHANGE_RATES_URL)%'
+    api_key: '%env(EXCHANGE_RATES_API_KEY)%'
+    timeout: 5
+    cache_ttl: 3600
+    retry_attempts: 3
+    retry_delay: 1000
+
+commission:
+  rates:
+    eu: 0.01
+    non_eu: 0.02
+
+cache:
+  default_ttl: 3600
+  namespace: 'commission_calculator'
+
+logging:
+  channel: 'commission_calculator'
+  level: 'info'

@@ -1,0 +1,21 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\Service\RateLimitService:
+        arguments:
+            $namespace: '%env(CACHE_NAMESPACE)%'
+            $limit: '%env(int:BIN_LOOKUP_RATE_LIMIT)%'
+
+    App\Service\BinLookupService:
+        arguments:
+            $baseUrl: '%env(BIN_LOOKUP_URL)%'
+            $timeout: 5
+            $cacheTtl: '%env(int:BIN_LOOKUP_CACHE_TTL)%'
+
+    App\Service\ExchangeRateService:
+        arguments:
+            $baseUrl: '%env(EXCHANGE_RATES_URL)%'
+            $timeout: 5
+            $cacheTtl: '%env(int:EXCHANGE_RATES_CACHE_TTL)%' 
