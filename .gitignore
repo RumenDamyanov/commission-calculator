@@ -1,0 +1,8 @@
+.DS_Store
+.vscode/
+.cursor/
+.cursorrules
+.phpunit.result.cache
+vendor/
+tests/coverage/
+.env
