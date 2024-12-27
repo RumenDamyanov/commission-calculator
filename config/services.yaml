@@ -1,21 +1,89 @@
+parameters:
+    # First, define processed environment variables
+    bin_lookup.rate_limit: '%env(int:BIN_LOOKUP_RATE_LIMIT)%'
+    bin_lookup.cache_ttl: '%env(int:BIN_LOOKUP_CACHE_TTL)%'
+    exchange_rates.rate_limit: '%env(int:EXCHANGE_RATES_RATE_LIMIT)%'
+    exchange_rates.cache_ttl: '%env(int:EXCHANGE_RATES_CACHE_TTL)%'
+    cache.ttl: '%env(int:DEFAULT_CACHE_TTL)%'
+    commission.eu_rate: '%env(float:EU_COMMISSION_RATE)%'
+    commission.non_eu_rate: '%env(float:NON_EU_COMMISSION_RATE)%'
+
+    # Then use these in your application parameters
+    app.name: 'commission-calculator'
+    app.version: '1.0.0'
+
+    # BIN Lookup Service
+    app.bin_lookup.base_url: '%env(BIN_LOOKUP_URL)%'
+    app.bin_lookup.rate_limit: '%bin_lookup.rate_limit%'
+    app.bin_lookup.window: 60
+    app.bin_lookup.timeout: 5
+    app.bin_lookup.cache_ttl: '%bin_lookup.cache_ttl%'
+
+    # Exchange Rates Service
+    app.exchange_rates.base_url: '%env(EXCHANGE_RATES_URL)%'
+    app.exchange_rates.api_key: '%env(EXCHANGE_RATES_API_KEY)%'
+    app.exchange_rates.rate_limit: '%exchange_rates.rate_limit%'
+    app.exchange_rates.window: 60
+    app.exchange_rates.timeout: 5
+    app.exchange_rates.cache_ttl: '%exchange_rates.cache_ttl%'
+
+    # Commission Rates
+    app.commission.eu_rate: '%commission.eu_rate%'
+    app.commission.non_eu_rate: '%commission.non_eu_rate%'
+
+    # Cache
+    app.cache.namespace: '%env(CACHE_NAMESPACE)%'
+    app.cache.ttl: '%cache.ttl%'
+
 services:
     _defaults:
         autowire: true
         autoconfigure: true
+        public: true
+
+    # This tells Symfony to look for services in the App\ namespace
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'
+            - '../src/DTO/'
+            - '../src/Exception/'
+
+    # Register HTTP Client
+    Symfony\Contracts\HttpClient\HttpClientInterface:
+        factory: ['Symfony\Component\HttpClient\HttpClient', 'create']
+
+    # Register Cache Service
+    Psr\Cache\CacheItemPoolInterface:
+        class: Symfony\Component\Cache\Adapter\FilesystemAdapter
+        arguments:
+            $namespace: '%app.cache.namespace%'
+            #$defaultLifetime: '%app.cache.ttl%'
+            $defaultLifetime: 3600
 
     App\Service\RateLimitService:
         arguments:
-            $namespace: '%env(CACHE_NAMESPACE)%'
+            $namespace: '%env(string:CACHE_NAMESPACE)%'
             $limit: '%env(int:BIN_LOOKUP_RATE_LIMIT)%'
+            $window: '%app.bin_lookup.window%'
+            $enabled: '%env(bool:RATE_LIMIT_ENABLED)%'
 
     App\Service\BinLookupService:
         arguments:
-            $baseUrl: '%env(BIN_LOOKUP_URL)%'
-            $timeout: 5
-            $cacheTtl: '%env(int:BIN_LOOKUP_CACHE_TTL)%'
+            $baseUrl: '%app.bin_lookup.base_url%'
+            $timeout: '%app.bin_lookup.timeout%'
+            $cacheTtl: '%app.bin_lookup.cache_ttl%'
 
     App\Service\ExchangeRateService:
         arguments:
-            $baseUrl: '%env(EXCHANGE_RATES_URL)%'
-            $timeout: 5
-            $cacheTtl: '%env(int:EXCHANGE_RATES_CACHE_TTL)%' 
+            $baseUrl: '%app.exchange_rates.base_url%'
+            $apiKey: '%app.exchange_rates.api_key%'
+            $timeout: '%app.exchange_rates.timeout%'
+            $cacheTtl: '%app.exchange_rates.cache_ttl%'
+
+    App\Service\CommissionCalculator:
+        arguments:
+            $euRate: '%env(float:EU_COMMISSION_RATE)%'
+            $nonEuRate: '%env(float:NON_EU_COMMISSION_RATE)%'

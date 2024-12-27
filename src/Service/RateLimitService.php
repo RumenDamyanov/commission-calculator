@@ -13,26 +13,21 @@ use App\Exception\CalculatorException;
 class RateLimitService
 {
     /**
-     * @var bool
-     */
-    private bool $enabled;
-
-    /**
      * Constructs a new RateLimitService instance.
      *
      * @param CacheItemPoolInterface $cache Cache implementation for storing request counts
      * @param string $namespace Unique namespace for the rate limit (e.g., 'bin_lookup', 'exchange_rate')
      * @param int $limit Maximum number of requests allowed within the time window
      * @param int $window Time window in seconds (default: 60)
+     * @param bool $enabled Whether rate limiting is enabled
      */
     public function __construct(
         private readonly CacheItemPoolInterface $cache,
         private readonly string $namespace,
         private readonly int $limit,
-        private readonly int $window = 60 // window in seconds
-    ) {
-        $this->enabled = filter_var($_ENV['RATE_LIMIT_ENABLED'] ?? true, FILTER_VALIDATE_BOOLEAN);
-    }
+        private readonly int $window = 60, // window in seconds
+        private readonly bool $enabled = true
+    ) {}
 
     /**
      * Check if the current request is within rate limits.
@@ -66,16 +61,6 @@ class RateLimitService
         $cacheItem->expiresAfter($this->window);
 
         $this->cache->save($cacheItem);
-    }
-
-    /**
-     * Set rate limit enabled status
-     *
-     * @param bool $enabled
-     */
-    public function setEnabled(bool $enabled): void
-    {
-        $this->enabled = $enabled;
     }
 
     /**

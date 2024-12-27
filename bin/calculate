@@ -3,73 +3,34 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-use App\Service\BinLookupService;
-use App\Service\ExchangeRateService;
-use App\Service\CommissionCalculator;
-use App\Service\RateLimitService;
-use App\Helper\CountryHelper;
-use App\DTO\Transaction;
-use Symfony\Component\HttpClient\HttpClient;
-use Symfony\Component\Cache\Adapter\FilesystemAdapter;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\Dotenv\Dotenv;
 
 // Load environment variables.
-$dotenv = new \Symfony\Component\Dotenv\Dotenv();
+$dotenv = new Dotenv();
 $dotenv->load(__DIR__ . '/../.env');
 
-// Set up cache.
-$cache = new FilesystemAdapter();
+// Create container.
+$container = new ContainerBuilder();
 
-// Set up HTTP client.
-$httpClient = HttpClient::create();
+// Load configuration.
+$loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../config'));
+$loader->load('services.yaml');
 
-// Set up helpers.
-$countryHelper = new CountryHelper();
+// Compile container.
+// Note: The 'true' parameter is necessary to resolve the environment variables.
+$container->compile(true);
 
-// Set up rate limiters.
-$binLookupRateLimiter = new RateLimitService(
-    $cache,
-    'bin_lookup',
-    (int) ($_ENV['BIN_LOOKUP_RATE_LIMIT'] ?? 100),
-    60
-);
-
-$exchangeRateRateLimiter = new RateLimitService(
-    $cache,
-    'exchange_rate',
-    (int) ($_ENV['EXCHANGE_RATES_RATE_LIMIT'] ?? 30),
-    60
-);
-
-// Set up services.
-$binLookupService = new BinLookupService(
-    $httpClient,
-    $cache,
-    $countryHelper,
-    $binLookupRateLimiter,
-    $_ENV['BIN_LOOKUP_URL'] ?? 'https://lookup.binlist.net',
-    5,
-    (int) ($_ENV['BIN_LOOKUP_CACHE_TTL'] ?? 3600)
-);
-
-// Set up services.
-$exchangeRateService = new ExchangeRateService(
-  $httpClient,
-  $cache,
-  $exchangeRateRateLimiter,
-  $_ENV['EXCHANGE_RATES_URL'] ?? 'https://api.apilayer.com/exchangerates_data/latest',
-  $_ENV['EXCHANGE_RATES_API_KEY'] ?? '',
-  5,
-  (int) ($_ENV['EXCHANGE_RATES_CACHE_TTL'] ?? 3600)
-);
-
-// Set up calculator.
-$calculator = new CommissionCalculator(
-    $binLookupService,
-    $exchangeRateService,
-    $countryHelper,
-    (float) ($_ENV['EU_COMMISSION_RATE'] ?? 0.01),
-    (float) ($_ENV['NON_EU_COMMISSION_RATE'] ?? 0.02)
-);
+// Get services from container.
+try {
+    $calculator = $container->get(App\Service\CommissionCalculator::class);
+} catch (Exception $e) {
+    echo "\nError getting CommissionCalculator:\n";
+    echo $e->getMessage() . "\n";
+    echo "Trace:\n" . $e->getTraceAsString() . "\n";
+}
 
 // Process input file.
 $inputFile = $argv[1] ?? null;
@@ -107,7 +68,7 @@ foreach ($lines as $line) {
             throw new Exception("Invalid JSON: $line");
         }
 
-        $transaction = new Transaction(
+        $transaction = new \App\DTO\Transaction(
             $data['bin'] ?? '',
             (float) ($data['amount'] ?? 0),
             $data['currency'] ?? ''

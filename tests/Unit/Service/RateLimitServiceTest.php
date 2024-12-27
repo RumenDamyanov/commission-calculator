@@ -32,7 +32,8 @@ class RateLimitServiceTest extends TestCase
             $this->cache,
             'test',
             2, // limit
-            60  // window
+            60,  // window
+            true // enabled
         );
     }
 
@@ -123,8 +124,14 @@ class RateLimitServiceTest extends TestCase
      */
     public function testCheckLimitWithRateLimitDisabled(): void
     {
-        // Arrange
-        $this->service->setEnabled(false);
+        // Create a new service instance with rate limiting disabled
+        $this->service = new RateLimitService(
+            $this->cache,
+            'test',
+            2,
+            60,
+            false // disabled
+        );
 
         // Cache should not be used at all when disabled
         $this->cache->expects($this->never())
