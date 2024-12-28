@@ -1,5 +1,6 @@
 parameters:
-    # First, define processed environment variables
+    app.name: 'commission-calculator'
+    app.version: '1.0.1'
     bin_lookup.rate_limit: '%env(int:BIN_LOOKUP_RATE_LIMIT)%'
     bin_lookup.cache_ttl: '%env(int:BIN_LOOKUP_CACHE_TTL)%'
     exchange_rates.rate_limit: '%env(int:EXCHANGE_RATES_RATE_LIMIT)%'
@@ -7,10 +8,6 @@ parameters:
     cache.ttl: '%env(int:DEFAULT_CACHE_TTL)%'
     commission.eu_rate: '%env(float:EU_COMMISSION_RATE)%'
     commission.non_eu_rate: '%env(float:NON_EU_COMMISSION_RATE)%'
-
-    # Then use these in your application parameters
-    app.name: 'commission-calculator'
-    app.version: '1.0.0'
 
     # BIN Lookup Service
     app.bin_lookup.base_url: '%env(BIN_LOOKUP_URL)%'
@@ -35,13 +32,16 @@ parameters:
     app.cache.namespace: '%env(CACHE_NAMESPACE)%'
     app.cache.ttl: '%cache.ttl%'
 
+    # Output settings
+    app.output.default_path: '%kernel.project_dir%/data/output.txt'
+
 services:
     _defaults:
         autowire: true
         autoconfigure: true
         public: true
 
-    # This tells Symfony to look for services in the App\ namespace
+    # The App namespace
     App\:
         resource: '../src/'
         exclude:
@@ -60,8 +60,7 @@ services:
         class: Symfony\Component\Cache\Adapter\FilesystemAdapter
         arguments:
             $namespace: '%app.cache.namespace%'
-            #$defaultLifetime: '%app.cache.ttl%'
-            $defaultLifetime: 3600
+            $defaultLifetime: '%app.cache.ttl%'
 
     App\Service\RateLimitService:
         arguments:

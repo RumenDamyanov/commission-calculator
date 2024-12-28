@@ -32,8 +32,10 @@ try {
     echo "Trace:\n" . $e->getTraceAsString() . "\n";
 }
 
-// Process input file.
+// Process input and output file arguments.
 $inputFile = $argv[1] ?? null;
+$outputFile = $argv[2] ?? null;
+
 if (!$inputFile) {
     die("Please provide an input file path\n");
 }
@@ -42,24 +44,32 @@ if (!file_exists($inputFile)) {
     die("Input file not found: $inputFile\n");
 }
 
-$lines = file($inputFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-if ($lines === false) {
-    die("Failed to read input file\n");
+// If no output file specified, use the default from configuration
+if (!$outputFile) {
+    $outputFile = str_replace(
+        '%kernel.project_dir%',
+        dirname(__DIR__),
+        $container->getParameter('app.output.default_path')
+    );
 }
 
-// Set up output file.
-$outputFile = __DIR__ . '/../data/output.txt';
+// Set up output directory.
 $outputDir = dirname($outputFile);
 
-// Create output directory if it doesn't exist.
+// Create output directory if it doesn't exist
 if (!is_dir($outputDir)) {
-    if (!mkdir($outputDir, 0777, true)) {
+    if (!mkdir($outputDir, true, 0777)) {
         die("Failed to create output directory: $outputDir\n");
     }
 }
 
 // Clear previous output file.
 file_put_contents($outputFile, '');
+
+$lines = file($inputFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+if ($lines === false) {
+    die("Failed to read input file\n");
+}
 
 foreach ($lines as $line) {
     try {

@@ -3,6 +3,7 @@
 .cursor/
 .cursorrules
 .phpunit.result.cache
+.env
 vendor/
 tests/coverage/
-.env
+data/output.txt
