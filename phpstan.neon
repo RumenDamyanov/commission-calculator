@@ -1,0 +1,22 @@
+parameters:
+    level: 7
+    paths:
+        - src
+        - bin
+    excludePaths:
+        - tests/*
+        - vendor/*
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false
+    ignoreErrors:
+        - '#PHPDoc tag @throws with type#'
+
+services:
+    -
+        class: PHPStan\Rules\Cast\EchoRule
+        tags:
+            - phpstan.rules.rule
+
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
